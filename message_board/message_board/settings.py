@@ -36,7 +36,8 @@ load_dotenv()
 # Application definition
 
 INSTALLED_APPS = [
-    'msg_brd.apps.MsgBrdConfig',
+    'Posts.apps.PostsConfig',
+    'Topics.apps.TopicsConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

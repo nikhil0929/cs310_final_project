@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class MsgBrdConfig(AppConfig):
+class TopicsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'msg_brd'
+    name = 'Topics'
