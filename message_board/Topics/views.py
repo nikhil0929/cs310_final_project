@@ -4,13 +4,8 @@ import json
 
 from Topics.models import Topic
 from django.views.decorators.csrf import csrf_exempt
-
-
-    # path('', views.list_topics, name='topic_list'),
-    # path('<int:pk>/', views.get_topic_detail, name='topic_get'),
-    # path('create/', views.create_topic, name='topic_create'),
-    # path('<int:pk>/update/', views.update_topic, name='topic_update'),
-    # path('<int:pk>/delete/', views.delete_topic, name='topic_delete'),
+from django.contrib.auth.decorators import login_required
+    
 
 # Gets list of all the topics and returns JSON list of topics
 def list_topics(request):
