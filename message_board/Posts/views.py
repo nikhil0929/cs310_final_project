@@ -4,8 +4,7 @@ import json
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from Topics.models import Topic
-from .models import Message
-from .models import Comment
+from .models import Message, Comment, Like
 
 
     # # List all main message posts under a specific topic.
@@ -41,7 +40,7 @@ from .models import Comment
     # # Remove like from a specific message or comment.
     # path('messages/<int:message_id>/unlike/', views.unlike_message, name='unlike_message'),
 
-
+@csrf_exempt
 def message_list(request, topic_id):
     try:
         # The advantage of the below method is that it checks the existence of the Topic before trying to access its related Messages, which can be helpful for error handling.
@@ -49,17 +48,17 @@ def message_list(request, topic_id):
         # Instead of:
         # all_messages = Message.objects.filter(parent_topic_id=topic_id)
 
-        topic = Topic.objects.get(pk=topic_id)
-        messages = topic.topic_messages.all()
+        my_topic = Topic.objects.get(pk=topic_id)
+        messages = my_topic.topic_messages.all()
 
         json_res = {
-            "messages": list(messages.values("id","title", "content", "created_at", "topic_id", "author__username"))
+            "messages": list(messages.values("id","title", "content", "created_at", "parent_topic_id", "author__username"))
         }
         return JsonResponse(json_res)
     except Topic.DoesNotExist:
         return HttpResponseNotFound(f"Topic with id {topic_id} does not exist")
 
-
+@csrf_exempt
 def message_detail(request, topic_id, message_id):
     try:
         msg = Message.objects.get(pk=message_id, parent_topic_id=topic_id)
@@ -78,6 +77,7 @@ def message_detail(request, topic_id, message_id):
         return HttpResponseNotFound(f"Message with id {message_id} under Topic {topic_id} does not exist")
 
 @login_required
+@csrf_exempt
 def message_create(request, topic_id):
     if request.method == "POST":
         try:
@@ -105,6 +105,7 @@ def message_create(request, topic_id):
         return HttpResponse("Only POST requests are allowed", status=405)
 
 @login_required
+@csrf_exempt
 def message_update(request, topic_id, message_id):
     if request.method == "PUT":
         try:
@@ -139,6 +140,7 @@ def message_update(request, topic_id, message_id):
             return HttpResponseNotFound(f"Message with id {message_id} under Topic {topic_id} does not exist")
 
 @login_required
+@csrf_exempt
 def message_delete(request, topic_id, message_id):
     if request.method == "DELETE":
         try:
@@ -146,11 +148,12 @@ def message_delete(request, topic_id, message_id):
             if request.user.id != msg.author.id:
                 return HttpResponse("You cannot delete other users messages!", status=403)
             msg.delete()
-            return HttpResponse(status=204)
+            return HttpResponse("Message deleted successfully", status=204)
         except Message.DoesNotExist:
             return HttpResponseNotFound(f"Message with id {message_id} under Topic {topic_id} does not exist")
 
 @login_required
+@csrf_exempt
 def comment_create(request, topic_id, message_id):
     if request.method == "POST":
         try:
@@ -173,18 +176,20 @@ def comment_create(request, topic_id, message_id):
         except Message.DoesNotExist:
             return HttpResponseNotFound(f"Message with id {message_id} under Topic {topic_id} does not exist")
 
+@csrf_exempt
 def comment_list(request, topic_id, message_id):
     try:
         msg = Message.objects.get(pk=message_id, parent_topic_id=topic_id)
         comments = msg.comments.all()
         json_res = {
-            "comments": list(comments.values("id", "content", "created_at", "message_id", "author__username"))
+            "comments": list(comments.values("id", "content", "created_at", "parent_message_id", "author__username"))
         }
         return JsonResponse(json_res)
     except Message.DoesNotExist:
         return HttpResponseNotFound(f"Message with id {message_id} under Topic {topic_id} does not exist")
 
 @login_required
+@csrf_exempt
 def comment_update(request, topic_id, message_id, comment_id):
     if request.method == "PUT":
         try:
@@ -212,6 +217,7 @@ def comment_update(request, topic_id, message_id, comment_id):
             return HttpResponseNotFound(f"Comment with id {comment_id} under Message {message_id} does not exist")
 
 @login_required
+@csrf_exempt
 def comment_delete(request, topic_id, message_id, comment_id):
     if request.method == "DELETE":
         try:
@@ -224,17 +230,49 @@ def comment_delete(request, topic_id, message_id, comment_id):
             return HttpResponseNotFound(f"Comment with id {comment_id} under Message {message_id} does not exist")
 
 @login_required
+@csrf_exempt
 def like_message(request, message_id):
-    try:
-        msg = Message.objects.get(pk=message_id)
-        msg.likes.add(request.user)
-        return HttpResponse(status=204)
-    except Message.DoesNotExist:
-        return HttpResponseNotFound(f"Message with id {message_id} does not exist")
+    if request.method == "POST":
+        try:
+            message = Message.objects.get(pk=message_id)
+            
+            # Check if the like already exists
+            if Like.objects.filter(user=request.user, message=message).exists():
+                return HttpResponse("You have already liked this message", status=400)
+
+            # Create the like
+            Like.objects.create(user=request.user, message=message)
+            
+            return HttpResponse("Message liked successfully")
+
+        except Message.DoesNotExist:
+            return HttpResponseNotFound(f"Message with id {message_id} does not exist")
+
+    else:
+        return HttpResponse("Only POST requests allowed", status=405)
     
 
 @login_required
+@csrf_exempt
 def unlike_message(request, message_id):
-    return HttpResponse("Not implemented yet")
+    if request.method == "DELETE":
+        try:
+            message = Message.objects.get(pk=message_id)
+
+            # Check if the like exists
+            like = Like.objects.filter(user=request.user, message=message).first()
+            if like is None:
+                return HttpResponse("You have not liked this message", status=400)
+
+            # Delete the like
+            like.delete()
+
+            return HttpResponse("Like removed successfully")
+
+        except Message.DoesNotExist:
+            return HttpResponseNotFound(f"Message with id {message_id} does not exist")
+    else:
+        return HttpResponse("Only DELETE requests allowed", status=405)
+
 
 
