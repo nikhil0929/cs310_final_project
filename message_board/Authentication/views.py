@@ -19,42 +19,58 @@ import json
 @csrf_exempt
 def create_user(request):
     if request.method == "POST":
+        try:
 
-        username = request.POST.get("username")
-        password = request.POST.get("password")
-        email = request.POST.get("email")
-        first_name = request.POST.get("first_name")
-        last_name = request.POST.get("last_name")
+            # username = request.POST.get("username")
+            # password = request.POST.get("password")
+            # email = request.POST.get("email")
+            # first_name = request.POST.get("first_name")
+            # last_name = request.POST.get("last_name")
 
-        if User.objects.filter(username=username).exists():
-            return HttpResponse("Username already exists", status=400)
-        if User.objects.filter(email=email).exists():
-            return HttpResponse("Email already exists", status=400)
-        
+            data = json.loads(request.body)
 
-        user = User.objects.create_user(
-            username=username, 
-            password=password, 
-            email=email, 
-            first_name=first_name, 
-            last_name=last_name)
-        
-        json_res = {
-            "user": {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
+            username = data.get("username")
+            email = data.get("email")
+            first_name = data.get("first_name")
+            last_name = data.get("last_name")
+            password = data.get("password")
+
+            if User.objects.filter(username=username).exists():
+                return HttpResponse("Username already exists", status=400)
+            if User.objects.filter(email=email).exists():
+                return HttpResponse("Email already exists", status=400)
+            
+
+            user = User.objects.create_user(
+                username=username, 
+                password=password, 
+                email=email, 
+                first_name=first_name, 
+                last_name=last_name)
+            
+            json_res = {
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                }
             }
-        }
-        return JsonResponse(json_res)
+            return JsonResponse(json_res)
+        except Exception as e:
+            return HttpResponse("User already exists", status=400)
 
 @csrf_exempt
 def login_user(request):
     if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
+        # username = request.POST.get("username")
+        # password = request.POST.get("password")
+        data = json.loads(request.body)
+
+        username = data.get("username")
+
+        password = data.get("password")
 
         if not User.objects.filter(username=username).exists():
             return HttpResponse("User does not exist", status=400)
@@ -63,7 +79,16 @@ def login_user(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return HttpResponse("Login successful")
+            json_res = {
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                }
+            }
+            return JsonResponse(json_res)
         else:
             return HttpResponse("Invalid credentials", status=400)
 

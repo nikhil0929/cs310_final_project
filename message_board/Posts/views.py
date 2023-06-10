@@ -81,10 +81,15 @@ def message_detail(request, topic_id, message_id):
 def message_create(request, topic_id):
     if request.method == "POST":
         try:
+            data = json.loads(request.body)
+
+            my_title = data.get("title")
+            my_content = data.get("content")
+            
             topic = Topic.objects.get(pk=topic_id)
             msg = Message.objects.create(
-                title=request.POST.get("title"),
-                content=request.POST.get("content"),
+                title=my_title,
+                content=my_content,
                 parent_topic=topic,
                 author=request.user
             )
@@ -98,7 +103,7 @@ def message_create(request, topic_id):
                     "author": msg.author.username
                 }
             }
-            return JsonResponse(json_res)
+            return JsonResponse(json_res, status=200)
         except Topic.DoesNotExist:
             return HttpResponseNotFound(f"Topic with id {topic_id} does not exist")
     else:
@@ -135,7 +140,7 @@ def message_update(request, topic_id, message_id):
                     "author": msg.author.username
                 }
             }
-            return JsonResponse(json_res)
+            return JsonResponse(json_res, status=200)
         except Message.DoesNotExist:
             return HttpResponseNotFound(f"Message with id {message_id} under Topic {topic_id} does not exist")
 
@@ -157,9 +162,12 @@ def message_delete(request, topic_id, message_id):
 def comment_create(request, topic_id, message_id):
     if request.method == "POST":
         try:
+            data = json.loads(request.body)
+
+            my_content = data.get("content")
             msg = Message.objects.get(pk=message_id, parent_topic_id=topic_id)
             comment = Comment.objects.create(
-                content=request.POST.get("content"),
+                content=my_content,
                 parent_message=msg,
                 author=request.user
             )
@@ -172,7 +180,7 @@ def comment_create(request, topic_id, message_id):
                     "author": comment.author.username
                 }
             }
-            return JsonResponse(json_res)
+            return JsonResponse(json_res, status=201)
         except Message.DoesNotExist:
             return HttpResponseNotFound(f"Message with id {message_id} under Topic {topic_id} does not exist")
 

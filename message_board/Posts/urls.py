@@ -3,7 +3,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    # List all main message posts under a specific topic.
+    # List all main posts under a specific topic.
     path('topics/<int:topic_id>/messages/', views.message_list, name='message_list'),
 
     # Get the message post detail for a specific message post under a topic.

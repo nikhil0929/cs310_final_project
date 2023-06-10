@@ -27,7 +27,9 @@ SECRET_KEY = 'django-insecure-fa-$r*j+t7dp7c+=i1l%gbvvqekf8&jqsqqw_lckf)=l0!h2f$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# CORS_ORIGIN_ALLOW_ALL = True
+
+ALLOWED_HOSTS = ['messageboard-env.eba-vka44hbw.us-east-2.elasticbeanstalk.com']
 
 ## load .env file
 load_dotenv()
@@ -44,11 +46,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
 ]
+
+# print("i am very mean to eva and i am not sorry because i am heartless and like seeing eva cry, i do however care about not making anyone else cry which is fucked up because shes the one that just finished my 350 project for me (copying and pasting is very hard work and her fingers are very tired)")
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -57,6 +63,9 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'message_board.urls'
+CORS_ORIGIN_ALLOW_ALL = True
+CSRF_COOKIE_SECURE = False
+CSRF_TRUSTED_ORIGINS = ['http://localhost:3000']
 
 TEMPLATES = [
     {

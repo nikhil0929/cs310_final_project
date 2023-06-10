@@ -11,11 +11,61 @@ from django.contrib.auth.decorators import login_required
 def list_topics(request):
     topic_list = Topic.objects.all()
     json_res = {
-        "topics": list(topic_list.values("id", "name"))
+        "topics": list(topic_list.values("id", "name", "description"))
     }
     return JsonResponse(json_res)
-    
 
+# # show all topics that a user has not subscribed to
+@csrf_exempt
+@login_required
+def list_unsubscribed_topics(request):
+    if request.user.is_authenticated:
+        user = request.user
+        topic_list = Topic.objects.exclude(subscribers=user)
+        json_res = {
+            "topics": list(topic_list.values("id", "name", "description"))
+        }
+        return JsonResponse(json_res)
+    else:
+        return HttpResponse("You must be logged in to view this page", status=401)
+
+
+@csrf_exempt
+@login_required
+def list_subscribed_topics(request):
+    if request.user.is_authenticated:
+        user = request.user
+        topic_list = Topic.objects.filter(subscribers=user)
+        json_res = {
+            "topics": list(topic_list.values("id", "name", "description"))
+        }
+        return JsonResponse(json_res)
+    else:
+        return HttpResponse("You must be logged in to view this page", status=401)
+
+
+# path('<int:topic_id>/subscribe/', views.subscribe_topic, name='topic_subscribe'),
+@csrf_exempt
+@login_required
+def subscribe_topic(request, topic_id):
+    if request.user.is_authenticated:
+        user = request.user
+        try:
+            topic = Topic.objects.get(pk=topic_id)
+            topic.subscribers.add(user)
+            json_res = {
+                "topic": {
+                    "id": topic.id,
+                    "name": topic.name,
+                    "description": topic.description,
+                    "subscriber_count": topic.subscribers.count(),
+                }
+            }
+            return JsonResponse(json_res)
+        except Topic.DoesNotExist:
+            return HttpResponseNotFound(f"Topic with id {topic_id} does not exist")
+    else:
+        return HttpResponse("You must be logged in to view this page", status=401)
 
 def get_topic_detail(request, topic_id):
     try:
@@ -36,8 +86,13 @@ def get_topic_detail(request, topic_id):
 @csrf_exempt
 def create_topic(request):
     if request.method == "POST":
-        name = request.POST.get("name")
-        description = request.POST.get("description")
+        data = json.loads(request.body)
+
+        my_name = data.get("name")
+        my_description = data.get("description")
+        
+        name = my_name
+        description = my_description
         topic = Topic.objects.create(name=name, description=description)
         json_res = {
             "topic": {
